@@ -15,8 +15,10 @@ public class PersonasVivas {
 
     private List<Integer> añosNacimientos ;
     private List<Integer> añosDefunciones ;
+    private TreeMap<Integer, Integer> acumuladoDefunciones = new TreeMap<>();
+    private TreeMap<Integer, Integer> acumuladoNacimientos = new TreeMap<>();
 
-    public void CargarDatos(){
+    private void CargarDatos(){
         try {
             URL path = this.getClass().getResource("/data.json");
             File file = new File(path.getFile());
@@ -46,23 +48,20 @@ public class PersonasVivas {
         TreeMap<Integer, Long> defuncionesPorAño = new TreeMap<>(añosDefunciones.stream().collect(groupingBy(p -> p , Collectors.counting())));
 
         //Con las frecuencias por año para cada uno, se procede a acumular los nacimientos y defunciones, de mayor a menor, para posteriormente poder calcular la cantidad de personas vivas dado un año.
-        TreeMap<Integer, Integer> acumuladoDefunciones = new TreeMap<>();
         defuncionesPorAño.forEach( (integer, aLong) ->
                 acumuladoDefunciones.put(
                     integer,
                     defuncionesPorAño.subMap(defuncionesPorAño.firstKey(), integer + 1).values().stream().mapToInt(d-> Math.toIntExact(d)).sum()
                 ));
 
-        TreeMap<Integer, Integer> acumuladoNacimientos = new TreeMap<>();
         nacimientosPorAño.forEach( (integer, aLong) ->
                 acumuladoNacimientos.put(
                     integer,
                     nacimientosPorAño.subMap(nacimientosPorAño.firstKey(), integer + 1).values().stream().mapToInt(d-> Math.toIntExact(d)).sum()
                 ));
-        CalcularPersonasVivasPorAño(acumuladoNacimientos, acumuladoDefunciones);
     }
 
-    private void CalcularPersonasVivasPorAño(TreeMap<Integer, Integer> acumuladoNacimientos, TreeMap<Integer, Integer> acumuladoDefunciones){
+    private void CalcularPersonasVivasPorAño(){
         //Con el acumulado de nacimientos y defunciones por año, es posible calcular el número de personas vivas en un año.
         //El calculo es el siguiente, el número de personas vivas en un año es igual a la diferencia entre el acumulado de nacimientos y el acumulado de defunciones del año anterior
         Map<Integer, Integer> personasVivasPorAño = new TreeMap<>();
@@ -93,5 +92,6 @@ public class PersonasVivas {
         PersonasVivas p = new PersonasVivas();
         p.CargarDatos();
         p.AcumularPorAño();
+        p.CalcularPersonasVivasPorAño();
     }
 }

@@ -1,7 +1,7 @@
 # Ejercicio lógico
 El ejercicio consiste en calcular el año en el cual más personas estuvieron vivas dada una lista de las fechas de nacimiento y defunción de un grupo de personas.
 
-##Requisitos para su ejecución
+## Requisitos para su ejecución
 1. Java JDK en su versión 8 o superior.
 2. Un data de entrada en formato JSON, en el proyecto se incluye uno de ejemplo. Si se desea utilizar otro data considerar lo siguiente:
    1. Deberá contener un key raíz llamado "data"
@@ -9,7 +9,7 @@ El ejercicio consiste en calcular el año en el cual más personas estuvieron vi
    3. Cada objeto deberá contener dos keys "birthYear" y "deathYear" y el valor debe ser númerico.
    4. Se deberá sustituir el data de ejemplo ubicado en la ruta src/main/resources
 
-##Explicación de la lógica en el programa
+## Explicación de la lógica en el programa
 El cálculo se realiza basandose en lo siguiente:
 1. Se genera un arreglo para contener los años de los nacimientos, y otro para las defunciones.
 2. Con los arreglos por medio de la clase Collection, se genera un TreeMap por cada arreglo, en donde las keys será el año y sus values será la frecuencia con la que se repite ese año en el arreglo.
