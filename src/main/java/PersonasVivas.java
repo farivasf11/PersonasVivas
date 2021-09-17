@@ -1,11 +1,10 @@
 
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import groovyjarjarantlr4.runtime.tree.Tree;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -14,25 +13,17 @@ import static java.util.stream.Collectors.groupingBy;
 
 public class PersonasVivas {
 
-    List<Integer> añosNacimientos ;
-    List<Integer> añosDefunciones ;
-
+    private List<Integer> añosNacimientos ;
+    private List<Integer> añosDefunciones ;
 
     public void CargarDatos(){
-        InputStream getLocalJsonFile = null;
         try {
             URL path = this.getClass().getResource("/data.json");
             File file = new File(path.getFile());
-
-
             HashMap<String,Object> jsonMap = new ObjectMapper().readValue(file, HashMap.class);
-
             ArrayList<HashMap<String, Integer>> data = (ArrayList<HashMap<String, Integer>>) jsonMap.get("data");
-
-            System.out.println(data.get(0).get("birthYear"));
-            System.out.println();
-            añosNacimientos = data.stream().map(stringIntegerHashMap -> stringIntegerHashMap.get("birthYear")).collect(Collectors.toList());
-            añosDefunciones = data.stream().map(stringIntegerHashMap -> stringIntegerHashMap.get("deathYear")).collect(Collectors.toList());
+            añosNacimientos = data.stream().map(p -> p.get("birthYear")).collect(Collectors.toList());
+            añosDefunciones = data.stream().map(p -> p.get("deathYear")).collect(Collectors.toList());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (JsonMappingException e) {
@@ -41,67 +32,66 @@ public class PersonasVivas {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e){
+            e.printStackTrace();
         }
-
     }
 
-    private void Calcular(){
+    private void AcumularPorAño(){
+        /*
+            Se genera un TreeMap para los nacimientos y defunciones, en donde a cada año se le asigna su frecuencia con la que se repite en el arreglo de años.
+            El TreeMap nos ayudará a tener los años ordenados de menor a mayor, así como métodos que permitan obtener un lowerKey dado un key proporcionado.
+         */
+        TreeMap<Integer, Long> nacimientosPorAño = new TreeMap<>(añosNacimientos.stream().collect(groupingBy(p -> p , Collectors.counting())));
+        TreeMap<Integer, Long> defuncionesPorAño = new TreeMap<>(añosDefunciones.stream().collect(groupingBy(p -> p , Collectors.counting())));
 
-        //List<Integer> añosNacimientos = Arrays.asList(1929, 1929, 1930, 1931, 1945, 1934, 1954, 1956, 1953, 1954, 1919, 1929, 1929);
-        //List<Integer> añosDefunciones = Arrays.asList(1980, 1935, 1933, 1932, 1990, 1954, 1994, 1966, 1993, 1984, 1969, 1939, 1969);
-
-        TreeMap<Integer, Long> frecuenciaPorAño = new TreeMap<>(añosNacimientos.stream().collect(groupingBy(p -> p , Collectors.counting())));
-        TreeMap<Integer, Long> frecuenciaPorAñoDef = new TreeMap<>(añosDefunciones.stream().collect(groupingBy(p -> p , Collectors.counting())));
-
-
-        TreeMap<Integer, Integer> newMapDef = new TreeMap<>();
-        frecuenciaPorAñoDef.forEach( (integer, aLong) ->
-                newMapDef.put(integer,
-                        frecuenciaPorAñoDef.subMap(frecuenciaPorAñoDef.firstKey(), integer + 1).values().stream().mapToInt(d-> Math.toIntExact(d)).sum()
+        //Con las frecuencias por año para cada uno, se procede a acumular los nacimientos y defunciones, de mayor a menor, para posteriormente poder calcular la cantidad de personas vivas dado un año.
+        TreeMap<Integer, Integer> acumuladoDefunciones = new TreeMap<>();
+        defuncionesPorAño.forEach( (integer, aLong) ->
+                acumuladoDefunciones.put(
+                    integer,
+                    defuncionesPorAño.subMap(defuncionesPorAño.firstKey(), integer + 1).values().stream().mapToInt(d-> Math.toIntExact(d)).sum()
                 ));
 
-
-        Map<Integer, Integer> newMap = new TreeMap<>();
-        frecuenciaPorAño.forEach( (integer, aLong) ->
-                newMap.put(integer,
-                        frecuenciaPorAño.subMap(frecuenciaPorAño.firstKey(), integer + 1).values().stream().mapToInt(d-> Math.toIntExact(d)).sum()
+        TreeMap<Integer, Integer> acumuladoNacimientos = new TreeMap<>();
+        nacimientosPorAño.forEach( (integer, aLong) ->
+                acumuladoNacimientos.put(
+                    integer,
+                    nacimientosPorAño.subMap(nacimientosPorAño.firstKey(), integer + 1).values().stream().mapToInt(d-> Math.toIntExact(d)).sum()
                 ));
+        CalcularPersonasVivasPorAño(acumuladoNacimientos, acumuladoDefunciones);
+    }
 
+    private void CalcularPersonasVivasPorAño(TreeMap<Integer, Integer> acumuladoNacimientos, TreeMap<Integer, Integer> acumuladoDefunciones){
+        //Con el acumulado de nacimientos y defunciones por año, es posible calcular el número de personas vivas en un año.
+        //El calculo es el siguiente, el número de personas vivas en un año es igual a la diferencia entre el acumulado de nacimientos y el acumulado de defunciones del año anterior
         Map<Integer, Integer> personasVivasPorAño = new TreeMap<>();
-        newMap.forEach((integer, aLong) -> {
-            if (newMapDef.floorKey(integer) != null) {
-                System.out.println(integer + " : "  + (aLong - newMapDef.floorEntry(integer).getValue()));
-                System.out.println("ValueBirths: " + aLong);
-                System.out.println("ValueDeaths: " + newMapDef.floorEntry(integer).getValue());
-                personasVivasPorAño.put(integer, (aLong - newMapDef.floorEntry(integer).getValue()));
+        acumuladoNacimientos.forEach((integer, aLong) -> {
+            if (acumuladoDefunciones.lowerKey(integer) != null) {
+                personasVivasPorAño.put(integer, (aLong - acumuladoDefunciones.lowerEntry(integer).getValue()));
             } else {
-                System.out.println(integer + " : "  + aLong);
-                System.out.println("ValueBirths: " + aLong);
                 personasVivasPorAño.put(integer, aLong);
             }
-            System.out.println("---------------------------");
         });
 
-
-        System.out.println(newMap);
-        System.out.println(newMapDef);
-        System.out.println("-----Resultados-----");
+        System.out.println(" - Acumulado de nacimientos por año: \n" + acumuladoNacimientos);
+        System.out.println(" - Acumulado de defunciones por año: \n" + acumuladoDefunciones);
+        System.out.println("----------Resultados----------\n - Personas vivas por año:");
         System.out.println(personasVivasPorAño);
-        int max = Collections.max(personasVivasPorAño.values());
-        List<Integer> keys = personasVivasPorAño.entrySet().stream()
-                .filter(entry -> entry.getValue() == max)
+
+        int maximaCantidad = Collections.max(personasVivasPorAño.values());
+        List<Integer> añosMayorCantidad = personasVivasPorAño.entrySet().stream()
+                .filter(entry -> entry.getValue() == maximaCantidad)
                 .map(entry -> entry.getKey())
                 .collect(Collectors.toList());
 
-        System.out.println("Máximas personas vivas: " + max);
-        System.out.println("Años con mayores personas vivas: " + keys);
-    }
-    public PersonasVivas(){
+        System.out.println("Máxima cantidad de personas vivas en un año: " + maximaCantidad);
+        System.out.println("Años con mayor cantidad de  personas vivas: " + añosMayorCantidad);
     }
 
     public static void main (String args[]){
         PersonasVivas p = new PersonasVivas();
         p.CargarDatos();
-        p.Calcular();
+        p.AcumularPorAño();
     }
 }
