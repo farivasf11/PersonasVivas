@@ -16,3 +16,7 @@ El cálculo se realiza basandose en lo siguiente:
 3. Con los TreeMap se procede a iterarlos, para generar un nuevo TreeMap, en el cual las keys será el año, y los values será el acumulado de nacimientos o defunciones hasta ese año.
 4. Posteriormente con últimos TreeMaps se genera un HasMap, el cual contendrá como keys el año, y los values será la diferencia del acumulado de nacimientos en ese año y el acumulado de defunciones en el año anterior, ya que las defunciones ocurridas en ese año son excluidas en el conteo para la cantidad de personas vivas.
 5. Finalmente se obtiene el mayor value en el HashMap que contiene las personas vivas por año, y se buscan las keys que contengan ese valor, se retorna el arreglo de años, en caso de ser mas de uno, que tienen la mayor cantidad de personas vivas.
+
+### Versión 2 de la solucion
+Se creó una nueva versión más optimizada de la solución, se ubica en la clase PersonasVivasV2.
+En esta versión se evita la creación de los TreeMaps del paso 3 y realizando el cálculo del paso 4 de manera inmediata.
